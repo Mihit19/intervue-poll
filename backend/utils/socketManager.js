@@ -138,11 +138,22 @@ module.exports = (io) => {
     // ASK QUESTION (Teacher)
     // ---------------------------
     socket.on('ask-question', async (data) => {
+      console.log('Mihit insocketmanager ask question');
+      console.log(socket.id);
       const user = connectedUsers.get(socket.id);
+      console.log('User:', user);
+
+if (user) {
+    console.log('User type:', user.type);
+} else {
+    console.log('User not found');
+}
       if (!user || user.type !== 'teacher') return;
+      console.log("after if statement")
 
       try {
         const poll = await Poll.findOne({ pollId: user.pollId });
+        console.log(poll);
         if (!poll) return;
 
         const questionId = uuidv4();
@@ -156,10 +167,11 @@ module.exports = (io) => {
           answers: [],
           results: { totalStudents: 0, answered: 0, options: {} }
         };
-
+        console.log(question);
         poll.questions.push(question);
         poll.currentQuestionId = questionId;
         poll.status = 'active';
+        console.log(poll)
         await poll.save();
 
         // Broadcast to room
@@ -169,6 +181,7 @@ module.exports = (io) => {
           timeLimit: question.timeLimit,
           questionId
         });
+        socket.emit('Teacher asked a question', (user.pollId ));
 
         // Start timer
         const timer = setTimeout(() => endQuestion(io, poll.pollId, questionId), data.timeLimit * 1000);
