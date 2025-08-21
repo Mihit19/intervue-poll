@@ -176,12 +176,12 @@ if (user) {
 
         // Broadcast to room
         io.to(user.pollId).emit('question-asked', {
-          question: question.text,
-          options: question.options,
-          timeLimit: question.timeLimit,
-          questionId
-        });
-        socket.emit('Teacher asked a question', (user.pollId ));
+  question: question.text,
+  options: question.options,
+  timeLimit: question.timeLimit,
+  questionId
+});
+console.log(`✅ Question broadcasted to room: ${user.pollId}`);
 
         // Start timer
         const timer = setTimeout(() => endQuestion(io, poll.pollId, questionId), data.timeLimit * 1000);
@@ -190,6 +190,65 @@ if (user) {
         console.error('ask-question error:', err);
       }
     });
+    socket.on('request-participants', async () => {
+  const user = connectedUsers.get(socket.id);
+  if (!user) return;
+
+  try {
+    const poll = await Poll.findOne({ pollId: user.pollId });
+    if (!poll) return;
+
+    // Get all active participants
+    const participants = [];
+    
+    // Add teacher
+    if (poll.teacher && poll.teacher.id) {
+      participants.push({
+        id: poll.teacher.id,
+        name: poll.teacher.name,
+        isTeacher: true
+      });
+    }
+
+    // Add active students
+    poll.students.filter(s => s.active).forEach(student => {
+      participants.push({
+        id: student.socketId,
+        name: student.name,
+        isTeacher: false
+      });
+    });
+
+    console.log(`📋 Sending participants list: ${participants.length} participants`);
+    socket.emit('current-participants', participants);
+  } catch (err) {
+    console.error('request-participants error:', err);
+  }
+});
+    socket.on('request-current-results', async () => {
+  const user = connectedUsers.get(socket.id);
+  if (!user || user.type !== 'teacher') return;
+
+  try {
+    const poll = await Poll.findOne({ pollId: user.pollId });
+    if (!poll || !poll.currentQuestionId) return;
+
+    const currentQuestion = poll.questions.find(q => q.questionId === poll.currentQuestionId);
+    if (!currentQuestion) return;
+
+    // Send current results to the teacher
+    socket.emit('current-results', {
+      results: currentQuestion.results,
+      question: {
+        id: currentQuestion.questionId,
+        text: currentQuestion.text,
+        options: currentQuestion.options
+      }
+    });
+  } catch (err) {
+    console.error('request-current-results error:', err);
+  }
+});
 
     // ---------------------------
     // SUBMIT ANSWER (Student)
