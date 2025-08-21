@@ -1,9 +1,7 @@
-// backend/socketManager.js
 const { v4: uuidv4 } = require('uuid');
 const Poll = require('../models/Poll');
 const ChatMessage = require('../models/ChatMessage');
 
-// ephemeral (not persisted) maps for runtime control
 const connectedUsers = new Map(); // socket.id -> { type, pollId, name }
 const questionTimers = new Map(); // questionId -> timer
 

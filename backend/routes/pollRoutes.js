@@ -2,10 +2,6 @@ const express = require('express');
 const Poll = require('../models/Poll');
 const router = express.Router();
 
-/**
- * GET /api/polls/:pollId/history
- * Returns poll history in the same shape your frontend expects
- */
 router.get('/:pollId/history', async (req, res) => {
   try {
     const poll = await Poll.findOne({ pollId: req.params.pollId });
